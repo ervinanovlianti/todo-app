@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
         event.preventDefault()
         addTodo()
     })
+
     function addTodo() {
         const textTodo = document.getElementById('title').value
         const timestamp = document.getElementById('date').value
@@ -17,7 +18,11 @@ document.addEventListener('DOMContentLoaded', function () {
         )
         todos.push(todoObject)
 
-        document.dispatchEvent(new Event(RENDER_EVENT))
+        document.dispatchEvent(new Event(RENDER_EVENT));
+        // =======================================
+        // ======== penambahan saved data =========
+        // =======================================
+        saveData();
     }
     function generateId() {
         return +new Date()
@@ -49,7 +54,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!todoItem.isCompleted)
             {
                 uncompletedTODOList.append(todoElement);
-            }else{
+            } else
+            {
                 completedTODOList.append(todoElement);
             }
         }
@@ -61,6 +67,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         todoTarget.isCompleted = true;
         document.dispatchEvent(new Event(RENDER_EVENT));
+        // =======================================
+        // ======== penambahan saved data =========
+        // =======================================
+        saveData();
+
     }
     function findTodo(todoId) {
         for (const todoItem of todos)
@@ -88,29 +99,31 @@ document.addEventListener('DOMContentLoaded', function () {
         container.append(textContainer);
         container.setAttribute('id', `todo-${todoObject.id}`);
 
-        
-        if (todoObject.isCompleted) {
+
+        if (todoObject.isCompleted)
+        {
             const undoButton = document.createElement('button');
             undoButton.classList.add('undo-button');
 
             undoButton.addEventListener('click', function () {
                 undoTaskFromComplete(todoObject.id);
             });
-            
+
             const trashButton = document.createElement('button');
             trashButton.classList.add('trash-button');
 
             trashButton.addEventListener('click', function () {
+                alert('Yakin Ingin Menghapus?')
                 removeTaskFromCompleted(todoObject.id);
             });
 
             container.append(undoButton, trashButton);
-        } else {
+        } else
+        {
             const checkButton = document.createElement('button');
             checkButton.classList.add('check-button');
 
             checkButton.addEventListener('click', function () {
-                alert('Yakin Ingin Menghapus?')
                 addTaskToCompleted(todoObject.id);
             });
             container.append(checkButton)
@@ -118,29 +131,85 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // mengembalikan nilai dari container
         return container;
+
     }
-    function removeTaskFromCompleted (todoId) {
+    function removeTaskFromCompleted(todoId) {
         const todoTarget = findTodoIndex(todoId);
 
         if (todoTarget === -1) return;
 
         todos.splice(todoTarget, 1);
         document.dispatchEvent(new Event(RENDER_EVENT));
+        // =======================================
+        // ======== penambahan saved data =========
+        // =======================================
+        saveData();
     }
-    function undoTaskFromComplete (todoId) {
+    function undoTaskFromComplete(todoId) {
         const todoTarget = findTodo(todoId);
 
         if (todoTarget == null) return;
 
         todoTarget.isCompleted = false;
         document.dispatchEvent(new Event(RENDER_EVENT));
+        // =======================================
+        // ======== penambahan saved data =========
+        // =======================================
+        saveData();
     }
     function findTodoIndex(todoId) {
-        for (const index in todos) {
-            if (todos[index].id === todoId) {
+        for (const index in todos)
+        {
+            if (todos[index].id === todoId)
+            {
                 return index;
             }
         }
         return -1;
     }
-})
+
+    const SAVED_EVENT = 'saved-todo';
+    const STORAGE_KEY = 'TODO_APPS';
+
+    function isStorageExist() { /* boolean */
+        if (typeof (Storage) === undefined)
+        {
+            alert('Browser anda tidak mendukung local storage');
+            return false;
+        }
+        return true;
+    }
+
+    function saveData() {
+        if (isStorageExist())
+        {
+            const parsed = JSON.stringify(todos);
+            localStorage.setItem(STORAGE_KEY, parsed);
+            document.dispatchEvent(new Event(SAVED_EVENT));
+        }
+    }
+    document.addEventListener(SAVED_EVENT, function () {
+        console.log(localStorage.getItem(STORAGE_KEY));
+    });
+
+    function loadDataFromStorage() {
+        // =============================================
+        // ======== memuat data setelah reload =========
+        // =============================================
+        // mengambil data dari localstorage dengan metode getitem
+        const ambilData = localStorage.getItem(STORAGE_KEY);
+        let data = JSON.parse(ambilData);
+
+        if (data !== null) {
+            for (const todo of data){
+                todos.push(todo);
+            }
+        }
+        document.dispatchEvent(new Event (RENDER_EVENT));
+    }
+
+    // penambahan kode baru
+    if (isStorageExist()) {
+        loadDataFromStorage();
+    }
+});
